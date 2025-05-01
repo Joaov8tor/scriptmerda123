@@ -29,44 +29,7 @@ pcall(function()
 		end)
 	end
 
-	-- Impede a remoção da GUI principal (evita anti-exploit de administração)
-	local function protectGui()
-		local coreGui = game:GetService("CoreGui")
-		local playerGui = game:GetService("Players").LocalPlayer.PlayerGui
-		
-		-- Impede a remoção de GUIs essenciais
-		for _, gui in pairs(coreGui:GetChildren()) do
-			if gui.Name:find("PainelSuysbsX") then
-				gui.Parent = playerGui
-			end
-		end
-	end
-	protectGui()
-
-	-- Remoção de Detecção de Scripts de Kick ou Ban
-	local function deepScan(obj)
-		for _, child in ipairs(obj:GetChildren()) do
-			if child:IsA("LocalScript") and (child.Name:lower():find("kick") or child.Name:lower():find("ban")) then
-				child:Destroy()
-			end
-			deepScan(child)
-		end
-	end
-	deepScan(game:GetService("Players").LocalPlayer)
-
-	-- Desabilita ou Oculta Indicadores do Sistema (ex.: Ban, Kick)
-	local function disableWarnings()
-		local coreGui = game:GetService("CoreGui")
-		for _, obj in ipairs(coreGui:GetChildren()) do
-			if obj:IsA("Message") then
-				obj:Destroy()  -- Remove qualquer tipo de mensagem suspeita
-			end
-		end
-	end
-	disableWarnings()
-
-	-- Impede alterações nas propriedades do jogador (ex.: isolamento ou kick)
-	local player = game:GetService("Players").LocalPlayer
+	-- Protege o jogador contra alterações no seu status
 	local function protectPlayer()
 		local player = game:GetService("Players").LocalPlayer
 		local mt = getrawmetatable(player)
@@ -86,175 +49,177 @@ pcall(function()
 	end
 	protectPlayer()
 
-	-- Proteção contra RemoteEvents (evita execução de eventos suspeitos)
-	local function protectRemotes()
-		for _, remote in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
-			if remote:IsA("RemoteEvent") then
-				local oldEvent = remote.OnClientEvent
-				remote.OnClientEvent = newcclosure(function(...)
-					-- Impede eventos suspeitos
-					return
-				end)
+	-- Função de Atravessar Paredes
+	local function atravessarParedes()
+		local playerChar = game:GetService("Players").LocalPlayer.Character
+		local humanoid = playerChar and playerChar:FindFirstChild("Humanoid")
+		if humanoid then
+			-- Configurações de Camadas de Proteção
+			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+			humanoid.PlatformStand = true
+			playerChar.PrimaryPart.CanCollide = false
+			playerChar:SetPrimaryPartCFrame(playerChar.PrimaryPart.CFrame * CFrame.new(0, 0, 0))
+
+			-- Movimenta o jogador através das paredes
+			while true do
+				wait(0.1)
+				playerChar:SetPrimaryPartCFrame(playerChar.PrimaryPart.CFrame * CFrame.new(0, 0, 0.2)) -- Ajuste de movimento
 			end
 		end
 	end
-	protectRemotes()
 
-	-- Esconde a tela do "Developer Console" para evitar visualização
-	local function hideConsole()
-		game:GetService("CoreGui"):FindFirstChildOfClass("DeveloperConsole").Enabled = false
-	end
-	hideConsole()
-
-	-- Protege contra alterações em LocalScripts importantes
-	local function protectLocalScripts()
-		for _, script in pairs(game:GetService("Players").LocalPlayer.PlayerScripts:GetChildren()) do
-			if script:IsA("LocalScript") then
-				-- Protege ou destrói scripts suspeitos
-				if script.Name:find("ban") or script.Name:find("kick") then
-					script:Destroy()
-				end
-			end
+	-- Função de Retornar ao Estado Normal (desativando atravessar paredes)
+	local function pararAtravessarParedes()
+		local playerChar = game:GetService("Players").LocalPlayer.Character
+		local humanoid = playerChar and playerChar:FindFirstChild("Humanoid")
+		if humanoid then
+			-- Retorna ao estado de colisão normal
+			humanoid.PlatformStand = false
+			playerChar.PrimaryPart.CanCollide = true
 		end
 	end
-	protectLocalScripts()
 
-	-- Monitoramento contínuo
-	while true do
-		wait(10)
-		-- Impede desconexões forçadas
-		local function disableDisconnect()
-			for _, v in pairs(getconnections(player.PlayerAdded)) do
-				v:Disable()
-			end
+	-- Ativar ou Desativar a Função de Atravessar Paredes
+	local atravesando = false
+	local function alternarAtravessar()
+		atravessando = not atravessando
+		if atravessando then
+			atravessarParedes()
+		else
+			pararAtravessarParedes()
 		end
-		disableDisconnect()
 	end
-end)
 
--- Restante do seu código para o painel e funções
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+	-- Restante do código de UI e funcionalidades
 
--- GUI Base
-local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-ScreenGui.Name = "PainelSuysbsX"
+	local TweenService = game:GetService("TweenService")
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
+	local Camera = workspace.CurrentCamera
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 300, 0, 400)
-Frame.Position = UDim2.new(0, -320, 0.3, 0) -- Começa fora da tela
-Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Frame.BorderSizePixel = 0
-Frame.Visible = true
-Frame.Active = true
-Frame.Draggable = true
-Frame.Parent = ScreenGui
+	-- GUI Base
+	local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+	ScreenGui.Name = "PainelSuysbsX"
 
-local corner = Instance.new("UICorner", Frame)
-corner.CornerRadius = UDim.new(0, 10)
+	local Frame = Instance.new("Frame")
+	Frame.Size = UDim2.new(0, 300, 0, 400)
+	Frame.Position = UDim2.new(0, -320, 0.3, 0) -- Começa fora da tela
+	Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	Frame.BorderSizePixel = 0
+	Frame.Visible = true
+	Frame.Active = true
+	Frame.Draggable = true
+	Frame.Parent = ScreenGui
 
--- Fade-in e Deslizamento
-TweenService:Create(Frame, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-	Position = UDim2.new(0, 20, 0.3, 0)
-}):Play()
+	local corner = Instance.new("UICorner", Frame)
+	corner.CornerRadius = UDim.new(0, 10)
 
--- Título
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundTransparency = 1
-Title.Text = "🌟 Painel Suysbs X"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
+	-- Fade-in e Deslizamento
+	TweenService:Create(Frame, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0, 20, 0.3, 0)
+	}):Play()
 
--- Função para botões animados
-local y = 50
-local function createButton(text, callback)
-	local btn = Instance.new("TextButton", Frame)
-	btn.Size = UDim2.new(0.9, 0, 0, 30)
-	btn.Position = UDim2.new(0.05, 0, 0, y)
-	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	btn.Text = text
-	btn.Font = Enum.Font.Gotham
-	btn.TextSize = 14
+	-- Título
+	local Title = Instance.new("TextLabel", Frame)
+	Title.Size = UDim2.new(1, 0, 0, 40)
+	Title.BackgroundTransparency = 1
+	Title.Text = "🌟 Painel Suysbs X"
+	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.Font = Enum.Font.GothamBold
+	Title.TextSize = 18
 
-	local bcorner = Instance.new("UICorner", btn)
-	bcorner.CornerRadius = UDim.new(0, 6)
+	-- Função para botões animados
+	local y = 50
+	local function createButton(text, callback)
+		local btn = Instance.new("TextButton", Frame)
+		btn.Size = UDim2.new(0.9, 0, 0, 30)
+		btn.Position = UDim2.new(0.05, 0, 0, y)
+		btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.Text = text
+		btn.Font = Enum.Font.Gotham
+		btn.TextSize = 14
 
-	-- Animações ao passar o mouse
-	btn.MouseEnter:Connect(function()
-		TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+		local bcorner = Instance.new("UICorner", btn)
+		bcorner.CornerRadius = UDim.new(0, 6)
+
+		-- Animações ao passar o mouse
+		btn.MouseEnter:Connect(function()
+			TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+		end)
+		btn.MouseLeave:Connect(function()
+			TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
+		end)
+
+		btn.MouseButton1Click:Connect(callback)
+		y += 35
+	end
+
+	-- Caixa de texto para nome do jogador
+	local playerBox = Instance.new("TextBox", Frame)
+	playerBox.Size = UDim2.new(0.9, 0, 0, 30)
+	playerBox.Position = UDim2.new(0.05, 0, 0, y)
+	playerBox.PlaceholderText = "Digite nome do jogador"
+	playerBox.Text = ""
+	playerBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	playerBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	playerBox.Font = Enum.Font.Gotham
+	playerBox.TextSize = 14
+	local pcorn = Instance.new("UICorner", playerBox)
+	pcorn.CornerRadius = UDim.new(0, 6)
+	y += 40
+
+	-- Funções
+	createButton("Definir Velocidade", function()
+		local speed = tonumber(playerBox.Text)
+		if speed then
+			LocalPlayer.Character.Humanoid.WalkSpeed = speed
+		end
 	end)
-	btn.MouseLeave:Connect(function()
-		TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
+
+	createButton("Teleportar para Jogador", function()
+		local target = Players:FindFirstChild(playerBox.Text)
+		if target and target.Character then
+			LocalPlayer.Character:MoveTo(target.Character:GetPivot().Position + Vector3.new(0, 3, 0))
+		end
 	end)
 
-	btn.MouseButton1Click:Connect(callback)
-	y += 35
-end
+	createButton("Trazer Jogador até Você", function()
+		local target = Players:FindFirstChild(playerBox.Text)
+		if target and target.Character then
+			local myPos = LocalPlayer.Character:GetPivot().Position
+			target.Character:SetPrimaryPartCFrame(CFrame.new(myPos + Vector3.new(2, 1, 0)))
+		end
+	end)
 
--- Caixa de texto para nome do jogador
-local playerBox = Instance.new("TextBox", Frame)
-playerBox.Size = UDim2.new(0.9, 0, 0, 30)
-playerBox.Position = UDim2.new(0.05, 0, 0, y)
-playerBox.PlaceholderText = "Digite nome do jogador"
-playerBox.Text = ""
-playerBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-playerBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-playerBox.Font = Enum.Font.Gotham
-playerBox.TextSize = 14
-local pcorn = Instance.new("UICorner", playerBox)
-pcorn.CornerRadius = UDim.new(0, 6)
-y += 40
+	-- Atravessar Paredes
+	createButton("Atravessar Paredes", function()
+		alternarAtravessar()
+	end)
 
--- Funções
-createButton("Definir Velocidade", function()
-	local speed = tonumber(playerBox.Text)
-	if speed then
-		LocalPlayer.Character.Humanoid.WalkSpeed = speed
-	end
-end)
+	-- Espectador
+	local spectating = false
+	createButton("👁 Ver Tela do Jogador", function()
+		local target = Players:FindFirstChild(playerBox.Text)
+		if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+			Camera.CameraSubject = target.Character.Humanoid
+			spectating = true
+		end
+	end)
 
-createButton("Teleportar para Jogador", function()
-	local target = Players:FindFirstChild(playerBox.Text)
-	if target and target.Character then
-		LocalPlayer.Character:MoveTo(target.Character:GetPivot().Position + Vector3.new(0, 3, 0))
-	end
-end)
+	createButton("↩️ Voltar à Sua Tela", function()
+		Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+		spectating = false
+	end)
 
-createButton("Trazer Jogador até Você", function()
-	local target = Players:FindFirstChild(playerBox.Text)
-	if target and target.Character then
-		local myPos = LocalPlayer.Character:GetPivot().Position
-		target.Character:SetPrimaryPartCFrame(CFrame.new(myPos + Vector3.new(2, 1, 0)))
-	end
-end)
+	-- Super Jump
+	createButton("Pulo Power!", function()
+		LocalPlayer.Character.Humanoid.JumpPower = 120
+		LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end)
 
--- Espectador
-local spectating = false
-createButton("👁 Ver Tela do Jogador", function()
-	local target = Players:FindFirstChild(playerBox.Text)
-	if target and target.Character and target.Character:FindFirstChild("Humanoid") then
-		Camera.CameraSubject = target.Character.Humanoid
-		spectating = true
-	end
-end)
-
-createButton("↩️ Voltar à Sua Tela", function()
-	Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
-	spectating = false
-end)
-
--- Super Jump
-createButton("Pulo Power!", function()
-	LocalPlayer.Character.Humanoid.JumpPower = 120
-	LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-end)
-
--- Fly Script externo
-createButton("Ativar Voo", function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+	-- Fly Script externo
+	createButton("Ativar Voo", function()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+	end)
 end)
